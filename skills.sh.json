@@ -1,0 +1,23 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Stack",
+      "description": "TypeScript toolchain, SolidJS UI conventions, and Tauri desktop stack.",
+      "skills": [
+        "ts-styleguide",
+        "solidjs-ui",
+        "tauri-solid-desktop"
+      ]
+    },
+    {
+      "title": "Fusion",
+      "description": "Multi-agent Fusion workflows for OpenCode and Cursor.",
+      "skills": [
+        "fusion-setup",
+        "cursor-fusion"
+      ]
+    }
+  ]
+}

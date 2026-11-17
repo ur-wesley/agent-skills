@@ -19,13 +19,14 @@ Do **not** write any of the three files until the user confirms the picture. No 
 
 Read. Do not invent:
 
-- `README.md`, existing `docs/IDEA.md` / `docs/STACK.md` / `docs/BRAND.md`
-- `package.json` / lockfile, `Cargo.toml`, `tauri.conf.*`
-- routes, `features/*`, app entry
-- CSS variables / theme tokens for palette
+- `README.md`, `DESIGN.md`, existing `docs/IDEA.md` / `docs/STACK.md` / `docs/BRAND.md`
+- `package.json` / lockfile, `mise.toml`, `.oxlintrc.json`, `knip.json`, `Cargo.toml`, `tauri.conf.*`
+- `server/`, `e2e/`, `Dockerfile` (to distinguish `web` SPA vs `web-fullstack`)
+- routes, `features/*`, `components/ui/*`, `components/*`, app entry
+- CSS variables / `@theme inline` tokens for palette
 - package name, window title, current product name
 
-Infer: problem, audience if stated, happy-path, features that exist, platform (`desktop` / `web` / `cli`), constraints, name.
+Infer: problem, audience if stated, happy-path, features that exist, platform (`desktop` / `web` / `web-fullstack` / `cli`), constraints, name.
 
 ## Gaps
 

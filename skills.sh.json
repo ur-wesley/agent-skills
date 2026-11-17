@@ -3,20 +3,33 @@
   "notGrouped": "bottom",
   "groupings": [
     {
-      "title": "Stack",
-      "description": "TypeScript toolchain, SolidJS UI conventions, and Tauri desktop stack.",
+      "title": "Stack & Engineering",
+      "description": "TypeScript toolchain, SolidJS UI/UX, Hono full-stack backend, Tauri desktop, Bun E2E testing, and Docker deployment.",
       "skills": [
         "ts-styleguide",
         "solidjs-ui",
-        "tauri-solid-desktop"
+        "tauri-solid-desktop",
+        "bun-hono-fullstack",
+        "bun-testing-e2e",
+        "bun-docker-deploy"
       ]
     },
     {
-      "title": "Fusion",
-      "description": "Multi-agent Fusion workflows for OpenCode and Cursor.",
+      "title": "App Briefing",
+      "description": "Product scoping, stack selection, existing-repo discovery, and branding docs.",
       "skills": [
-        "fusion-setup",
-        "cursor-fusion"
+        "app-brief",
+        "app-existing",
+        "app-scope",
+        "app-stack",
+        "app-brand"
+      ]
+    },
+    {
+      "title": "Vault",
+      "description": "Project Vault MCP server operations, kanban cards, and agent worktree automation.",
+      "skills": [
+        "project-vault"
       ]
     }
   ]

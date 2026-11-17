@@ -10,9 +10,10 @@ Prescribed dependencies, structure, and code patterns for Tauri + SolidJS deskto
 
 ### UI
 
-- `tailwindcss` v4, `@tailwindcss/postcss`, `tailwind-merge`, `class-variance-authority`, `clsx`
-- `@kobalte/core`, `cmdk-solid`
+- `tailwindcss` v4, `@tailwindcss/vite` (or `@tailwindcss/postcss`), `tailwind-merge`, `clsx`, optional `class-variance-authority`
+- `@kobalte/core`, `@ark-ui/solid`, `@corvu/drawer`, `cmdk-solid`, `solid-sonner`
 - `@iconify/tailwind4`, `@iconify-json/mdi`
+- Self-hosted `@fontsource/*` packages (zero Google Fonts requests)
 
 ### Logic
 
@@ -105,47 +106,30 @@ Install: `bun add -d bumpp tauri-version`
 
 ```
 src/
-├── components/ui/     # solid-ui primitives — domain-agnostic
+├── components/
+│   ├── ui/            # atomic primitive wrappers (single file, or folder of atoms when complex)
+│   ├── layout/        # reusable page/shell/split-pane layouts
+│   └── <organism>/    # organisms in their own directories under src/components/
 ├── features/<name>/   # components, hooks, actions per feature
 ├── services/          # Tauri invoke wrappers (ResultAsync via ts-prelude /result)
 ├── lib/               # utils (cn), contexts
 ├── types/
-└── App.css            # tailwindcss + @iconify/tailwind4 plugin
+└── index.css          # tailwindcss v4 + @theme inline + @iconify/tailwind4 plugin
 src-tauri/
 ├── src/               # commands + domain modules
 ├── Cargo.toml
 └── tauri.conf.json
-ui.config.json         # solid-ui CLI config
 mise.toml
 bump.config.ts
 ```
 
-## App.css (Tailwind 4 + Iconify)
+## index.css / App.css (Tailwind 4 + Iconify)
 
 ```css
 @import "tailwindcss";
-@config "../tailwind.config.cjs";
 
 @plugin "@iconify/tailwind4" {
   prefix: "i";
-}
-```
-
-## ui.config.json
-
-```json
-{
-  "$schema": "https://solid-ui.com/schema.json",
-  "tsx": true,
-  "tailwind": {
-    "css": "src/App.css",
-    "config": "tailwind.config.cjs",
-    "prefix": ""
-  },
-  "aliases": {
-    "components": "~/components/ui",
-    "utils": "~/lib/utils"
-  }
 }
 ```
 
@@ -202,13 +186,13 @@ Dynamic icon name:
 <span class={cn("size-4", `i-mdi-${iconName}`)} />
 ```
 
-### solid-ui component
+### Custom primitive component
 
 ```tsx
-import { Button } from "~/components/ui/button";
+import { Button } from '../components/ui/button';
 
 <Button variant="outline" size="sm" onClick={handleClick}>
-  <span class="i-mdi-plus size-4" />
+  <span class="i-mdi-plus size-4" aria-hidden="true" />
   Add
 </Button>
 ```

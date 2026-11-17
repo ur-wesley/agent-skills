@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository.
 
 ## Repository overview
 
-A collection of [Agent Skills](https://agentskills.io/) for TypeScript/SolidJS/Tauri development and Fusion multi-agent workflows. Skills are packaged instructions that extend agent capabilities.
+A collection of [Agent Skills](https://agentskills.io/) for Bun/TypeScript, SolidJS UI/UX, Hono full-stack, Tauri desktop, Docker deployment, and app briefing workflows. Skills are packaged instructions that extend agent capabilities.
 
 ## Creating or editing a skill
 

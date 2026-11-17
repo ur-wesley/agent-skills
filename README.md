@@ -1,6 +1,6 @@
 # Agent Skills
 
-Personal [Agent Skills](https://agentskills.io/) for TypeScript/SolidJS/Tauri development and Fusion multi-agent workflows.
+Personal [Agent Skills](https://agentskills.io/) for Bun/TypeScript, SolidJS UI/UX, Hono full-stack backends, Tauri desktop, Docker packaging, and app briefing workflows.
 
 [![skills.sh](https://skills.sh/b/ur-wesley/agent-skills)](https://skills.sh/ur-wesley/agent-skills)
 
@@ -16,36 +16,64 @@ Install individual skills:
 npx skills add ur-wesley/agent-skills --skill ts-styleguide
 npx skills add ur-wesley/agent-skills --skill solidjs-ui
 npx skills add ur-wesley/agent-skills --skill tauri-solid-desktop
-npx skills add ur-wesley/agent-skills --skill fusion-setup
-npx skills add ur-wesley/agent-skills --skill cursor-fusion
+npx skills add ur-wesley/agent-skills --skill bun-hono-fullstack
+npx skills add ur-wesley/agent-skills --skill bun-testing-e2e
+npx skills add ur-wesley/agent-skills --skill bun-docker-deploy
 npx skills add ur-wesley/agent-skills --skill app-brief
 npx skills add ur-wesley/agent-skills --skill app-existing
 npx skills add ur-wesley/agent-skills --skill app-scope
 npx skills add ur-wesley/agent-skills --skill app-stack
 npx skills add ur-wesley/agent-skills --skill app-brand
+npx skills add ur-wesley/agent-skills --skill project-vault
 ```
 
 ## Available skills
 
-### Stack
+### Stack & Engineering
 
 #### ts-styleguide
 
-TypeScript project toolchain — Bun runtime/package manager, Oxc (oxlint type-aware + type-check, oxfmt), lefthook, strict tsconfig, optional greenfield monorepo.
+Generic TypeScript project toolchain — Bun runtime/package manager, Oxc (`oxlint` type-aware + type-check, `oxfmt`), `knip` dead-code checks, `lefthook`, `mise`, strict `tsconfig`, and optional greenfield monorepo.
 
-**Use when:** scaffolding or working on TS repos, lint/format/hooks, oxlint/oxfmt/lefthook/tsconfig, or Bun workspaces.
+**Use when:** scaffolding or working on TS repos, lint/format/knip/hooks, oxlint/oxfmt/lefthook/tsconfig, or Bun workspaces.
 
 #### solidjs-ui
 
-Highest-priority SolidJS UI style guide. Icons via `i-mdi-<icon>` (Iconify prefix `i`). Logic via `@ur-wesley/ts-prelude/<subpath>`.
+Highest-priority SolidJS UI, tooling, and UX design skill. Bespoke components built directly on Kobalte / Ark UI / Corvu / `solid-sonner`, SolidJS Oxlint/tsconfig/`bun:test` TSX preload, flat UX layout without nested containers, `@theme inline` + `class-guard`, `i-mdi-*` icons, and `@ur-wesley/ts-prelude/<subpath>`.
 
-**Use when:** any SolidJS, Tailwind, components/ui, features/*, routes, forms, context stores, or frontend UI work.
+**Use when:** any SolidJS, Tailwind, `components/*`, `features/*`, routes, forms, context stores, or frontend UI/UX work.
 
 #### tauri-solid-desktop
 
-Builds Tauri v2 desktop apps with SolidJS, Tailwind 4, solid-ui, Iconify MDI icons, Bun, `@ur-wesley/ts-prelude`, and solid-primitives. UI conventions follow `solidjs-ui`.
+Builds Tauri v2 desktop apps with SolidJS, Tailwind 4, Kobalte/Ark UI primitives, Iconify MDI icons, Bun, `@ur-wesley/ts-prelude`, and solid-primitives. UI conventions follow `solidjs-ui`.
 
-**Use when:** creating or modifying Tauri SolidJS desktop apps, writing Tauri commands, or releasing via bumpp.
+**Use when:** creating or modifying Tauri SolidJS desktop apps, writing Tauri commands, or releasing via `bumpp`.
+
+#### bun-hono-fullstack
+
+Full-stack Bun + Hono backend (`hono/client` RPC), `bun:sqlite`, `better-auth`, Zod v4 bounded validators, `@ur-wesley/ts-prelude/log` structured logging, security hardening (CSP, DNS-pinned SSRF guard, timing-safe tokens), and `/healthz` probes.
+
+**Use when:** building or auditing Bun HTTP APIs, `server/routes/*`, `server/db/*`, auth, or full-stack SolidJS web apps.
+
+#### bun-testing-e2e
+
+Bun-native 3-tier zero-Playwright E2E testing (`app.request`, `Bun.WebView`, isolated fullstack `Bun.serve` + Vite + `Bun.WebView`) with cross-platform `e2e/run.ts` and prod-safety gates.
+
+**Use when:** setting up or running E2E suites, isolated test DBs, or E2E auth bypass seams.
+
+#### bun-docker-deploy
+
+Multi-stage `oven/bun-alpine` → `alpine` Docker packaging using `bun build --compile --bytecode`, `tini` + `su-exec` non-root entrypoints, `/healthz` probes, and volume permissions.
+
+**Use when:** creating or auditing `Dockerfile`, `docker-entrypoint.sh`, `.dockerignore`, or container deployments.
+
+### Vault
+
+#### project-vault
+
+Project Vault MCP server operations for workspace and board automation — query projects, manage markdown kanban cards (`.vault/kanban/`), and orchestrate isolated git worktree coding agents.
+
+**Use when:** managing projects, kanban cards, or agent worktrees in Project Vault.
 
 ### App briefing
 
@@ -59,7 +87,7 @@ Interview until the picture is complete (problem, users, MVP, platform, naming t
 
 #### app-existing
 
-Auto-discover idea, stack, and brand from an existing repo, grill only gaps, confirm the picture, then run the three writers.
+Auto-discover idea, stack, and brand from an existing codebase, grill only gaps, confirm the picture, then run the three writers.
 
 **Use when:** the repo already has an app, "document this app", "existing project brief", "capture this repo", or wanting those docs for code that already exists. New/empty app → `app-brief`.
 
@@ -67,33 +95,19 @@ Auto-discover idea, stack, and brand from an existing repo, grill only gaps, con
 
 Writes `docs/IDEA.md` — idea, audience, MVP scope, features, non-goals.
 
-**Use when:** scoping an app, listing features, or after app-brief / app-existing confirms the picture.
+**Use when:** scoping an app, listing features, or after `app-brief` / `app-existing` confirms the picture.
 
 #### app-stack
 
-Writes `docs/STACK.md` from platform (desktop / web / cli) using prescribed stack skills. Does not invent a stack.
+Writes `docs/STACK.md` from platform (`desktop` / `web` / `web-fullstack` / `cli`) using prescribed stack skills. Does not invent a stack.
 
-**Use when:** choosing or recording app tech, or after app-brief / app-existing confirms the picture.
+**Use when:** choosing or recording app tech, or after `app-brief` / `app-existing` confirms the picture.
 
 #### app-brand
 
 Writes `docs/BRAND.md` — name from a theme field, corporate design, concise logo prompt (no image unless asked).
 
-**Use when:** naming an app, defining brand/CD, or after app-brief / app-existing confirms the picture.
-
-### Fusion
-
-#### fusion-setup
-
-Sets up the OpenCode Fusion agent team — a main agent that plans and reviews but delegates all edits to a sidekick subagent, plus explore/search and optional specialists.
-
-**Use when:** "set up fusion", "configure fusion", "install fusion", changing Fusion agent models, or using a subscription profile (OpenCode Go/Zen, ChatGPT, GitHub Copilot).
-
-#### cursor-fusion
-
-Cursor Fusion workflow (Devin Fusion-style). Orchestrates model split: Grok 4.5 plans/reviews, Composer edits, explore/cavecrew for search.
-
-**Use when:** "use fusion", "delegate sidekick", "cursor fusion", or starting multi-file feature work.
+**Use when:** naming an app, defining brand/CD, or after `app-brief` / `app-existing` confirms the picture.
 
 ## Skill structure
 

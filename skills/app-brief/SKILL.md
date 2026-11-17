@@ -27,7 +27,7 @@ Order:
 4. MVP features vs later
 5. Non-goals
 6. Constraints (local-first, offline, must-integrate-with)
-7. Platform: **desktop / web / cli**
+7. Platform: **desktop / web / web-fullstack / cli**
 8. Naming **theme field** (stars, minerals, ships, birds, …)
 9. Visual personality: **calm / dense / playful / serious**
 

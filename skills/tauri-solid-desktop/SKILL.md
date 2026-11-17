@@ -1,6 +1,6 @@
 ---
 name: tauri-solid-desktop
-description: Builds Tauri v2 desktop apps with SolidJS, Tailwind 4, solid-ui, Iconify MDI icons, Bun, @ur-wesley/ts-prelude, and solid-primitives. UI conventions follow solidjs-ui. Use when creating or modifying Tauri SolidJS desktop apps, writing Tauri commands, or releasing via bumpp (syncing package.json, Cargo.toml, and tauri.conf.json).
+description: Builds Tauri v2 desktop apps with SolidJS, Tailwind 4, Kobalte/Ark UI primitives, Iconify MDI icons, Bun, @ur-wesley/ts-prelude, and solid-primitives. UI conventions follow solidjs-ui. Use when creating or modifying Tauri SolidJS desktop apps, writing Tauri commands, or releasing via bumpp (syncing package.json, Cargo.toml, and tauri.conf.json).
 ---
 
 # Tauri Solid Desktop
@@ -20,11 +20,11 @@ description: Builds Tauri v2 desktop apps with SolidJS, Tailwind 4, solid-ui, Ic
 | Layer | Choices |
 | ----- | ------- |
 | Desktop | Tauri v2 + Rust |
-| Frontend | SolidJS, Tailwind 4, solid-ui (`components/ui`) |
+| Frontend | SolidJS, Tailwind 4, Kobalte / Ark UI primitives (`components/ui`) |
 | Icons | Iconify MDI via `@iconify/tailwind4` — `i-mdi-<icon>` per `solidjs-ui` |
 | Logic | `@ur-wesley/ts-prelude/<subpath>` per `solidjs-ui` |
 | Primitives | solid-primitives (event-bus, keyboard, i18n) |
-| Tooling | Bun, mise, Oxlint + Oxfmt |
+| Tooling | Bun, mise, Oxlint + Oxfmt, knip |
 | Release | bumpp → tag `v*` → GitHub Actions → Releases + updater |
 
 Details, deps, snippets: [STACK.md](STACK.md). Setup, Rust, CI: [REFERENCE.md](REFERENCE.md).
@@ -36,11 +36,10 @@ Read in order; skip missing files:
 1. `package.json` — Bun, stack deps, release scripts
 2. `bump.config.ts` — version file list
 3. `mise.toml`, `.env.example`
-4. `ai/styleguide-tailwind.md`, `ai/styleguide-rust.md`
-5. `ui.config.json`
-6. `src-tauri/tauri.conf.json`
-7. `.github/workflows/*`
-8. `docs/RELEASE.md`
+4. `DESIGN.md`, `ai/styleguide-tailwind.md`, `ai/styleguide-rust.md`
+5. `src-tauri/tauri.conf.json`
+6. `.github/workflows/*`
+7. `docs/RELEASE.md`
 
 Summarize in chat: aligned, missing, divergent. Stack itself is prescribed.
 
@@ -58,11 +57,13 @@ Never `npm run` or `pnpm`. Use `bun`, `bun run`, `bunx` only.
 ## Project structure
 
 ```
-src/components/ui/   # solid-ui primitives — domain-agnostic
-src/features/<name>/ # feature components, hooks, actions
-src/services/        # Tauri invoke wrappers (ResultAsync via ts-prelude /result)
-src/lib/             # cn(), contexts
-src-tauri/src/       # thin commands + modules
+src/components/ui/     # atomic primitive wrappers (file -> folder of atoms when it grows)
+src/components/layout/ # reusable page/shell/split-pane layouts
+src/components/<org>/  # organisms in their own directories under src/components/
+src/features/<name>/   # feature components, hooks, actions
+src/services/          # Tauri invoke wrappers (ResultAsync via ts-prelude /result)
+src/lib/               # cn(), contexts
+src-tauri/src/         # thin commands + modules
 ```
 
 Import rule: `components/ui` must not import from `features/*`.
@@ -89,9 +90,10 @@ See `solidjs-ui` for full ts-prelude subpath table and UI conventions.
 
 Follow `solidjs-ui`. Summary:
 
-- Add primitives via solid-ui CLI (`ui.config.json`); wrap in `components/ui`
-- Tailwind utilities + design tokens from `App.css` `@theme`
+- Build domain-agnostic UI primitives directly on `@kobalte/core`, `@ark-ui/solid`, `@corvu/drawer`, and `solid-sonner`
+- Tailwind utilities + `@theme inline` design tokens from `src/index.css` / `App.css`
 - Icons: `i-mdi-<icon>` classes (Iconify prefix `i`)
+- Flat UX hierarchy (no nested card-in-card containers); spacing over borders
 
 ## Tauri workflow
 

@@ -73,12 +73,13 @@ Order: `std` → external crates → `crate::` → `super::`. No wildcard import
 
 ## Frontend conventions
 
-Read project `ai/styleguide-tailwind.md` when present. Defaults:
+Follow `solidjs-ui` (read `DESIGN.md` or `ai/styleguide-tailwind.md` when present). Defaults:
 
 - Feature-based layout under `src/features/<name>/`
-- `components/ui` is domain-agnostic; no feature imports
+- Bespoke atomic primitive components in `components/ui/` (promoting to `components/ui/<name>/` when a component outgrows one file) and organisms in `components/<organism>/` — domain-agnostic; no feature imports in `components/ui`
+- Flat visual hierarchy (max 1 containment level, spacing over borders)
 - TanStack Query in features for async data — not in shared UI
-- Accessibility required: semantic HTML, focus styles, labels
+- Accessibility required: semantic HTML, `focus-visible` styles, labels
 - Icons: `i-mdi-<icon>` per `solidjs-ui` (Iconify tailwind4 plugin, prefix `i`)
 
 ## Release workflow (bumpp → CI)
@@ -133,9 +134,8 @@ Post in chat when repo diverges — never auto-create files:
 - [ ] CI re-syncs version from tag — remove PowerShell/sed step; use bumpp pre-push
 - [ ] Missing `@ur-wesley/ts-prelude` — add to package.json for new code
 - [ ] Styleguide uses `iconify mdi--*` — migrate to `i-mdi-*` per `solidjs-ui`
-- [ ] No ui.config.json — run solid-ui init
 - [ ] README missing setup — add: mise install, bun install, bun tauri dev
-- [ ] No lint/typecheck in CI — add bun run lint + typecheck to workflow
+- [ ] No lint/typecheck in CI — add bun run check (or lint + typecheck) to workflow
 ```
 
 ## Reference implementation
@@ -147,7 +147,7 @@ Post in chat when repo diverges — never auto-create files:
 | Stack guide | `docs/stack-guide.md` |
 | UI style | `ai/styleguide-tailwind.md` |
 | Rust style | `ai/styleguide-rust.md` |
-| solid-ui | `ui.config.json`, `src/components/ui/` |
+| Shared primitives | `src/components/ui/` |
 | Icons | `src/App.css`, feature components |
 | ts-prelude /result | `src/services/tauri/utils.ts` |
 | CI | `.github/workflows/build-windows.yml` |

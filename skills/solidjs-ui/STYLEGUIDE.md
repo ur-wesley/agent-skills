@@ -1,428 +1,279 @@
 # SolidJS UI Style Guide
 
-Conventions for building scalable, type-safe, maintainable UI with SolidJS and Tailwind CSS v4.
+Conventions for building scalable, fast, type-safe, accessible UIs with SolidJS, Tailwind CSS v4, and headless primitives (`@kobalte/core`, `@ark-ui/solid`, `@corvu/drawer`, `cmdk-solid`, `solid-sonner`).
 
-## Core Principles
+---
 
-- Use shared UI primitives in `components/ui` (the `solid-ui` layer), composed from headless primitives and `solid-sonner`
-- Use Tailwind CSS for styling with `@theme` design tokens
-- Use MDI icons via Iconify Tailwind plugin (`i-mdi-<icon>` classes)
-- Prefer maintained `solid-primitives` over ad hoc reimplementation
-- Keep UI and business logic strictly separate
-- Shared context stores must expose a readonly tuple: `readonly [state, actions]`
-- Prefer strong typing, readonly types, and immutable APIs
-- Prefer composition over configuration
-- Centralize mutations
-- Derive state instead of duplicating it
-- Keep reusable UI domain-agnostic
-- Accessibility is required
-- Use `@ur-wesley/ts-prelude/<subpath>` for `neverthrow` / `ts-pattern` / `remeda` usage
+## 1. Core Principles
 
-## Tech Stack
+- **Own your component layer**: wrap `@kobalte/core` / `@ark-ui/solid` / `@corvu/drawer` in `src/components/ui/` using atomic composition (single files for small atoms, growing into `src/components/ui/<name>/` folders of internal atoms + `use-<name>.ts` hooks + `index.ts` when a component outgrows one file). Place organisms in their own directories under `src/components/<organism>/`. Build directly on primitives rather than third-party component generators.
+- **Flat visual hierarchy**: max 1 level of visual containment; never nest cards inside cards.
+- **Spacing & typography over borders**: let Gestalt proximity, alignment, and type scale organize the screen before reaching for `1px` borders or heavy shadows.
+- **Tokens & class guard**: map runtime CSS vars (`--theme-*`, `--cp-*`) via `@theme inline` in `src/index.css` and enforce semantic classes via `scripts/class-guard.ts`.
+- **Strict separation**: UI renders state; logic decides state. `components/ui/**` stays 100% domain-agnostic.
+- **Strong typing & immutability**: no `any`, explicit exported prop/return types, `Readonly<T>`, `readonly T[]`, `readonly [state, actions]` context tuples, and `@ur-wesley/ts-prelude/<subpath>`.
 
-### SolidJS
+---
 
-- Prefer fine-grained reactivity
-- Use the simplest reactive primitive that solves the problem
-- Avoid unnecessary effects
-- Keep data flow explicit
-- Use `splitProps` / `mergeProps` / `children(() => ...)` for prop forwarding and dynamic children
+## 2. UX & Layout Craft (Avoiding Visual Noise)
 
-### Headless Primitives
+### 2.1 Flat Spatial Hierarchy (No Deeply Nested Containers)
 
-Build `solid-ui` on top of these layers:
+- **Ban the "Card-in-Card" anti-pattern**: never wrap a page in a container card, place section cards inside it, and put bordered sub-cards inside those ("UI Russian nesting dolls").
+- **Max 1 level of containment**: a view may group related items into a single surface/card, or keep the canvas flat with background sections — never nest bordered cards inside cards unless functionally required (e.g., an embedded interactive widget or distinct drag item).
+- **Spacing over borders**:
+  - Use generous gaps (`gap-6`, `gap-8`) between sections and tighter gaps (`gap-2`, `gap-3`) within a group (Gestalt Law of Proximity).
+  - Use typographic contrast (weight, size, muted secondary text) and subtle tonal shifts (`bg-surface` vs `bg-card`) rather than `1px` grid lines around every block.
+  - **Box audit rule**: count the visible rectangles on any screen; if removing a border or card wrapper leaves the grouping clear via alignment and whitespace, delete the wrapper.
 
-- `@kobalte/core` for accessible primitives (dialog, popover, select, combobox, switch, slider, tooltip, etc.)
-- `@ark-ui/solid` for primitives not in Kobalte (date-picker, etc.)
-- `@corvu/drawer` for the drawer primitive
-- `solid-sonner` for toasts (mount `<Toaster>` once at the root, call `toast()` everywhere else)
+### 2.2 Visual Hierarchy & Elevation Restraint
 
-Rules:
+- **1–2 focal points per view**: limit high-contrast primary fills (`bg-accent text-on-accent`) to primary actions; secondary actions stay ghost/outline/tonal so they don't compete.
+- **Scroll-plane performance**: keep high-density list/grid/calendar items synthetic (backgrounds, gradients, hairlines) with **zero `backdrop-filter`** and **zero per-card container queries**. Reserve frosted blur/elevation for floating chrome (toolbars, dialogs, popovers, toasts).
+- **Squircle / consistent radii**: stick to `DESIGN.md` radius tokens (`sm`, `md`, `lg`, `pill`). Never invent ad-hoc `rounded-[13px]` values.
 
-- `components/ui` wraps these primitives and exposes a stable app-specific API
-- Never import from `features/*` inside `components/ui`
-- Never reach for raw HTML when a primitive already covers the behavior
+### 2.3 Interaction Craft & Perceived Performance
 
-### Variants and Class Composition
+- **No overloaded click triggers**: never assign single-click to select/open and double-click to edit on the same target (forces a 250–400ms browser disambiguation delay). Give secondary actions dedicated targets.
+- **0ms `pointerdown` feedback, forgiving `click` commit**: depress/highlight immediately on `pointerdown`; resolve navigation/mutation on `pointerup`/`click` so dragging off cancels safely.
+- **Action-first + Undo over modal fatigue**:
+  - For reversible actions (toggle, archive, move, delete item), mutate optimistically at `0ms`, dispatch in the background, and show a `toast()` with an **Undo** action (or rollback + retry toast on failure).
+  - For truly destructive/irreversible actions, use an inline `HoldToConfirmButton` or a typed-confirmation dialog rather than reflexive "Are you sure?" popups.
+- **Smart tooltip warm-up/cool-down**: group toolbar tooltips so the first hover waits `~500ms` (cold), moving to sibling buttons opens at `0ms` (warm), and leaving resets after `~500ms` (cool-down).
+- **Fitts's Law hitboxes**: keep small `16px` visual icons inside `>= 44×44px` interactive hit targets on mobile (via padding or pseudo-elements).
+- **Perceived speed windows**:
+  - `0–100ms`: instant active state / optimistic toggle.
+  - `100–300ms`: crisp transform/opacity transitions (no layout-thrashing animations).
+  - `300ms–1s`: layout-matching skeleton screens instead of generic centered spinners.
+  - `> 1s`: non-blocking progress indicator while keeping the rest of the workspace interactive.
+- **Progressive disclosure**: keep primary views uncluttered; move advanced options, bulk tools, and secondary settings into popovers, drawers (`@corvu/drawer`), sheets, or `cmdk-solid` command palettes.
 
-- `class-variance-authority` (`cva`) for variant APIs in `components/ui/*`
-- `clsx` + `tailwind-merge` composed in a single `cn(...)` helper in `lib/utils`
-- Components call `cn(...)` only — never import `clsx` or `twMerge` directly
+### 2.4 Mobile, Viewport & Accessibility Polish
 
-### TanStack
+- App shell: `100dvh` (`100vh` fallback); scroll containers below a floating bottom nav carry `pb-nav-safe` (`max(5.5rem, env(safe-area-inset-bottom) + 4.5rem)`).
+- Mobile inputs/command inputs: `>= 16px` font size on touch viewports to prevent iOS Safari auto-zoom.
+- Semantic HTML first (`<button>`, `<nav>`, `<main>`, `<label>`); never clickable `<div>`s.
+- Keyboard accessible everywhere (`Tab`, `Enter`, `Space`, `Escape`), visible `focus-visible` rings, WCAG `4.5:1` text contrast, never color-only state, and `@media (prefers-reduced-motion: reduce)` support.
 
-Use TanStack libraries where they improve correctness and structure:
+---
 
-- `@tanstack/solid-query` for server state, caching, loading and error states, invalidation, and mutations
-- `@tanstack/solid-table` for complex data tables
-- `@tanstack/solid-router` for typed, file-based routing and route-driven data loading
-- `@tanstack/router-plugin/vite` for the file-based route tree
+## 3. SolidJS Tooling Extensions (Owned by This Skill)
 
-Rules:
+Add these on top of `ts-styleguide` in every SolidJS repo.
 
-- Prefer TanStack Query over ad hoc fetch state management for shared or server data
-- Keep TanStack usage out of low-level shared UI components
-- Query keys and query functions must be typed
-- Normalize server data before passing it into presentational UI
-- Keep mutations in feature actions and services, not in generic UI atoms
+### 3.1 `tsconfig.json` SolidJS Additions
 
-### solid-primitives
-
-Use `solid-primitives` whenever they fit. Prefer them over hand-rolled equivalents.
-
-Common ones:
-
-- `event-listener` — typed DOM listeners
-- `media` — media queries
-- `i18n` — dictionary provider
-- `geolocation` — browser geolocation
-- `keyed`, `storage` — keyed signals and persistence
-- `throttle` / `debounce` — rate limiting
-- `mutation-observer`, `resize-observer`, `intersection-observer` — DOM observation
-
-Rules:
-
-- Prefer maintained primitives over ad hoc reimplementation
-- Keep primitive usage explicit and typed
-- If a primitive exists, do not reimplement it inline
-
-### Styling
-
-- Tailwind CSS v4 via `@tailwindcss/vite`
-- Tokens declared in `src/index.css` via `@theme` (oklch palette, radii, fonts)
-- Theme switching via `[data-theme="..."]` selectors and `color-scheme`
-- Iconify plugin loaded with `prefix: "i"` (`@iconify/tailwind4` + `@iconify-json/mdi`)
-- Prefer semantic utility names tied to tokens over arbitrary values
-- Avoid arbitrary values unless justified
-
-### Typing
-
-- All public APIs must be explicitly typed
-- Never use `any`
-- Prefer `unknown` and narrow properly
-- Props, context values, actions, and utility return types must be typed
-- Import from `@ur-wesley/ts-prelude/<subpath>` — never from the package root
-
-## Project Structure
-
-- `components/ui`: the `solid-ui` layer — reusable, domain-agnostic UI built from primitives
-- `features/*`: domain-specific logic and composed components
-- `services`: API and side-effect integrations
-- `utils`: pure helpers
-- `routes`: file-based route components and route logic
-- `lib`: cross-cutting helpers (e.g. `cn(...)`, `i18n`)
-
-## Atomic Design
-
-- Atoms: smallest reusable building blocks
-- Molecules: small combinations of atoms
-- Organisms: larger reusable UI sections
-- Templates: layout structures without feature logic
-- Pages: route-level composition
-
-Rules:
-
-- Shared UI in `components/ui` must stay domain-agnostic
-- Do not place feature or business logic in shared UI
-- Prefer small, composable components
-
-## Import Boundaries
-
-- `components/ui` must not import from `features/*`
-- Features may import from `components/ui`, `utils`, and `lib`
-- Routes may compose features and shared UI
-- Avoid circular dependencies
-
-## Component Rules
-
-- One component, one responsibility
-- Keep props minimal and explicit
-- Export every component prop type
-- Mark props readonly
-- Prefer `cva` for variants — avoid boolean prop explosion
-- Use `children` intentionally
-- Prefer composition over overly generic slot APIs
-- Use `splitProps` / `mergeProps` for prop forwarding
-
-## UI vs Logic
-
-UI components render state.
-Logic decides state.
-
-Do:
-
-- keep business logic in feature services, context actions, TanStack query hooks, or route-level orchestration
-
-Do not:
-
-- fetch data inside reusable UI atoms or molecules
-- perform navigation in low-level shared components
-- access storage directly in presentational shared UI
-- embed business rules into generic UI components
-
-## Reactivity Conventions
-
-- `createSignal`: simple local state
-- `createMemo`: derived or computed values
-- `createStore`: grouped or nested state
-- `createResource`: async loading tied to reactive sources
-- `createEffect`: imperative side effects only
-
-Rules:
-
-- Use the simplest primitive possible
-- Avoid effects for derivable state
-- Do not use memos by default
-
-## Context Store Pattern
-
-All shared context stores must return:
-
-```ts
-readonly [state, actions];
+```json
+{
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "jsx": "preserve",
+    "jsxImportSource": "solid-js"
+  }
+}
 ```
 
-Rules:
+### 3.2 `.oxlintrc.json` SolidJS Additions
 
-- State is readonly to consumers
-- Actions are the only mutation path
-- Context helpers must throw if used outside their provider
-- Actions should express intent
+Install `eslint-plugin-solid` and enable Solid rules + `.tsx` line budget:
 
-Naming:
+```jsonc
+{
+  "plugins": ["typescript", "unicorn", "oxc", "import", "jsdoc", "vitest"],
+  "jsPlugins": ["eslint-plugin-solid"],
+  "rules": {
+    "solid/components-return-once": "error",
+    "solid/event-handlers": "error",
+    "solid/imports": "error",
+    "solid/jsx-no-duplicate-props": "error",
+    "solid/jsx-no-script-url": "error",
+    "solid/jsx-no-undef": "error",
+    "solid/jsx-uses-vars": "error",
+    "solid/no-destructure": "error",
+    "solid/no-innerhtml": "error",
+    "solid/no-react-deps": "error",
+    "solid/no-react-specific-props": "error",
+    "solid/no-unknown-namespaces": "error",
+    "solid/prefer-for": "error",
+    "solid/reactivity": "error",
+    "solid/self-closing-comp": "error",
+    "solid/style-prop": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.tsx"],
+      "rules": {
+        "max-lines": ["error", { "max": 500, "skipBlankLines": true, "skipComments": true }]
+      }
+    }
+  ]
+}
+```
 
-- `createXContext`
-- `XProvider`
-- `useXContext`
+### 3.3 `bun:test` Solid TSX Preload (`bunfig.toml` + `test/solid-tsx-preload.ts`)
 
-## State Ownership
+`bun test` defaults to Solid's `server` build (where `render`/`Portal` throw) and uses React-style `jsxDEV` transforms. Wire `bunfig.toml`:
 
-- Local visual state stays local
-- Shared feature state belongs in feature context
-- App-wide state belongs in top-level providers
-- Server state should usually live in TanStack Query, not duplicated in context
-- Derive display state instead of storing duplicate flags
-- SSE / streamed responses must be wrapped in `ResultAsync` and surface loading / empty / error / success states; never throw across the boundary
+```toml
+[test]
+preload = ["./test/solid-tsx-preload.ts"]
+```
 
-## TypeScript Rules
+In `test/solid-tsx-preload.ts` (requires `happy-dom`, `@babel/core`, `@babel/plugin-syntax-jsx`, `@babel/preset-typescript`, `babel-preset-solid`):
 
-- Strong typing is mandatory
-- All exported functions must have explicit return types
-- All props, context values, actions, and utilities must be typed
-- Use readonly by default
-- Always import through `@ur-wesley/ts-prelude/<subpath>` — never from `neverthrow`, `ts-pattern`, or `remeda` directly
-- Prefer:
-  - `Readonly<T>`
-  - `readonly T[]`
-  - readonly tuples
-- Avoid:
-  - `any`
-  - broad `object`
-  - broad `Function`
+1. Install `happy-dom` `Window`, `document`, `navigator`, and DOM element constructors (`HTMLDivElement`, `HTMLHeadElement`, `SVGElement`, `MutationObserver`, `ResizeObserver`, `requestAnimationFrame`, etc.) onto `globalThis` before any test loads.
+2. Stub `fetch` to reject unexpected external URLs so unit tests never leak network calls.
+3. Register a `Bun.plugin` `onLoad`:
+   - Compile `*.tsx` with `babel-preset-solid` (`{ generate: 'dom', hydratable: false }`). Keep bare `solid-js*` specifiers untouched so module identity never forks.
+   - Intercept `solid-js/(dist|web/dist|store/dist)/server.js` and serve the **diagnostic `dev.js` client builds** (`dist/dev.js`, `web/dist/dev.js`, `store/dist/dev.js`). Using `dev.js` rather than production `solid.js` keeps unowned-root warnings observable for reactive-leak tests (`computations/cleanups created outside a createRoot`).
 
-## Styling Rules
+---
 
-- Use Tailwind CSS utilities in JSX
-- Keep spacing, radii, colors, and typography aligned to `@theme` tokens
-- Extract repeated patterns into reusable component APIs (cva variants, named molecules)
-- Interactive components should define:
-  - default
-  - hover
-  - `focus-visible`
-  - active
-  - disabled
-  - `aria-invalid` if applicable
-  - `data-[state=...]` for stateful primitives (open, checked, etc.)
+## 4. Tech Stack & Headless Primitives
 
-## Icons
+- **Primitives**: `@kobalte/core`, `@ark-ui/solid`, `@corvu/drawer`, `@corvu/calendar`, `cmdk-solid`, `solid-sonner`. Wrap them inside your own component directory with stable app-specific prop APIs. Never render raw `<select>`/`<dialog>` when a primitive covers keyboard navigation, focus trapping, and ARIA.
+- **Variants & Class Composition**:
+  - `cn(...)` in `src/lib/utils.ts` (`clsx` + `tailwind-merge`). Components call `cn(...)` only — never import `clsx`/`twMerge` directly or join class arrays manually.
+  - `cva` (`class-variance-authority`) is recommended for primitives with `>= 3` orthogonal variants; for simpler 1–2 variant components, a small typed `Record<Variant, string>` map avoids extra dependencies (`knip` clean).
+- **TanStack Suite**:
+  - `@tanstack/solid-query` with centralized `src/lib/query-keys.ts` and `src/lib/query-client.ts`. Keep queries/mutations in `features/*` or `services/*` — never inside shared UI primitives. Normalize server DTOs before passing to presentational components.
+  - `@tanstack/solid-form` + `zod` for typed forms (`src/forms/` or `features/*/forms`).
+  - `@tanstack/solid-table` for complex grids/tables.
+  - `@tanstack/solid-router` for typed routes.
+- **`solid-primitives`**: prefer `@solid-primitives/keyboard`, `@solid-primitives/i18n`, `@solid-primitives/storage`, `@solid-primitives/geolocation`, `@solid-primitives/timer`, `@solid-primitives/media`, `@solid-primitives/resize-observer` over hand-rolled DOM/listener boilerplate.
 
-- Use MDI icons via the Iconify Tailwind plugin: `i-mdi-<icon>`
-- Configure the plugin with `prefix: "i"`
-- Color and size with `text-*` and `size-*` utilities
-- Decorative icons must use `aria-hidden="true"`
-- Icon-only controls must have an accessible label
-- Prefer standard MDI icons over ad hoc custom SVGs when possible
+---
 
-## Accessibility
+## 5. Styling, Tokens, Typography & Class Guard
 
-Required:
+### 5.1 `@theme` + `@theme inline` (`src/index.css`)
 
-- Use semantic HTML first
-- Every interactive element must be keyboard accessible
-- Visible focus styles are mandatory
-- Use ARIA only when native semantics are insufficient
-- Icon-only controls must have labels
-- Form controls must have labels
-- Error messages must be associated correctly
-- Support reduced motion where relevant
+Declare self-hosted fonts and static scales in `@theme`, and map dynamic theme CSS variables (`--theme-*`, `--cp-*`) in `@theme inline` so Tailwind v4 generates semantic utilities with opacity support (`bg-accent/12`, `text-fg-2`, `border-line`):
 
-Do not:
+```css
+@import '@fontsource/ibm-plex-sans-condensed/latin-400.css';
+@import '@fontsource-variable/jetbrains-mono/index.css';
+@import 'tailwindcss';
 
-- use clickable `div`s
-- remove focus styles without replacement
-- rely only on color to communicate state
+@plugin "@iconify/tailwind4" {
+  prefix: 'i';
+}
 
-## Forms
+@custom-variant dark (&:where(.dark, .dark *, [data-theme*="dark"], [data-theme*="dark"] *));
 
-Every form field pattern should support:
+@theme {
+  --font-sans: 'IBM Plex Sans Condensed', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
+}
 
-- label
-- control
-- helper text
-- error text
+@theme inline {
+  --color-fg: var(--theme-text-primary);
+  --color-fg-2: var(--theme-text-secondary);
+  --color-fg-muted: var(--theme-text-muted);
+  --color-accent: var(--theme-accent);
+  --color-on-accent: var(--theme-on-accent);
+  --color-danger: var(--theme-danger);
+  --color-line: var(--theme-border);
+  --color-card: var(--theme-card-surface);
+  --color-glass: var(--theme-glass-surface);
+  --color-surface: var(--theme-surface);
+  --color-background: var(--theme-background);
+}
 
-Rules:
+@utility tnum {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+```
 
-- Validation logic stays outside low-level UI
-- Normalize field states across input-like components
-- Define whether a component is controlled, uncontrolled, or both
+### 5.2 Automated Class Guard (`scripts/class-guard.ts`)
 
-## Async Data
+Run in `check:all` (`bun scripts/class-guard.ts`) over `src/**/*.tsx` (excluding `*.test.tsx`) to fail CI on:
 
-- Prefer `@tanstack/solid-query` for server state
-- Keep fetching out of low-level shared UI
-- Normalize API data before passing to presentational components
-- Handle loading, empty, error, and success states explicitly
-- Wrap streamed / SSE responses in `ResultAsync`; never throw past the boundary
+- Arbitrary mapped var classes like `text-[var(--theme-text-primary)]` (use `text-fg`).
+- Arbitrary hex classes like `bg-[#005FCC]` (define a token first).
+- `color-mix(...)` in JSX classes referencing mapped vars (use `bg-accent/12`).
+- Tiny illegible text classes (`text-[8px]`, `text-[9px]`, `text-[10px]`).
 
-## Helpers and Error Modeling
+### 5.3 Icons
 
-Always import through `@ur-wesley/ts-prelude/<subpath>`. The package root exports only `VERSION` — never import from it for application logic.
+- MDI via `@iconify/tailwind4` (`prefix: "i"`): `<span class="i-mdi-plus size-4" aria-hidden="true" />`.
+- Dynamic icons: `<span class={cn('size-4', `i-mdi-${props.icon}`)} aria-hidden="true" />`.
+- Icon-only buttons must include `aria-label` (or `<span class="sr-only">`).
 
-### Subpaths in scope
+---
 
-| Subpath | Used for | Replaces |
-| --- | --- | --- |
-| `/result` | `Result`, `ResultAsync`, `ok`, `err`, `matchResult`, `runCatching`, `traverse`, `combineWithAllErrors` | direct `neverthrow` |
-| `/option` | `Option<T>` for nullable values, `fromNullable`, `map`, `andThen`, `getOrElse`, `zip` | `T \| null` chains |
-| `/match` | `match` + `R` / `O` / `P` for exhaustive branching on `Result` / `Option` / tagged unions | direct `ts-pattern` |
-| `/pipe` | `pipe` / `flow` / `tap` / `dbg` for left-to-right composition | direct `remeda` |
-| `/scope` | `let_`, `run`, `apply`, `also`, `with_`, `ifSome`, `ifOk`, `ifErr`, `require` | inline IIFEs |
-| `/interop` | `fromNullable`, `toOption`, `toResult` at API boundaries | manual narrowing |
-| `/types` | `brand`, `tag`, `assertNever`, `refine`, `head` for ADTs and branded types | hand-rolled brands |
-| `/record` | `copy`, `update`, `updatePath` for immutable updates | spread-mutation smell |
-| `/async` | `retry`, `withTimeout`, `race`, `parallel`, `asyncTraverse` for `ResultAsync` | hand-rolled retry / timeout |
-| `/data/<fn>` | one remeda function per file when only one helper is needed (`filter`, `groupBy`, `sortBy`, `uniqueBy`, `find`, `chunk`, `partition`, `omit`, `pick`, …) | `import * as R from "remeda"` |
-| `/log` | structured logging via consola — `logger.info`, `logger.withTag(...)` | `console.*` |
+## 6. Project Structure, Naming & Import Boundaries
 
-### Out of scope (mentioned briefly)
+### 6.1 File & Symbol Naming
 
-- `/config` — typesafe env config; useful in services and tooling, not in components
-- `/wire` — composition-root only; not a service locator
-- `/resource` — `defer` / `usingResource` / `using` / `usingAsync` for `Disposable`
-- `/lazy` — `lazy` / `once` memoization
-- `/iter` — lazy iterator combinators (`fromArray`, `flatMap`, `take`, `skip`, `enumerate`)
+- **Filenames**: `kebab-case` everywhere under `src/**` (`recipe-create-form.tsx`, `use-button.ts`, `date-format.ts`). Never `RecipeCreateForm.tsx`.
+- **Component exports**: `PascalCase` (`RecipeCreateForm`, `HoldToConfirmButton`).
+- **Hooks/factories/context**: `createX`, `useX`, `getX`.
+- **Actions**: verb-first (`toggle`, `open`, `close`, `setItems`, `submit`).
 
-### When to use which module
+### 6.2 Atomic Growth & Import Boundaries
 
-- nullable value → `fromNullable` / `toOption` (`/option`, `/interop`)
-- fallible operation → `ok` / `err` / `runCatching` (`/result`)
-- exhaustive branching → `match` + `R` / `O` / `P` + `.exhaustive()` (`/match`)
-- transform in place → `let_` or `pipe(value, fn1, fn2)` (`/scope`, `/pipe`)
-- side-effect logging → `logger` from `/log`, or `tap` / `dbg` in pipes (`/pipe`)
-- single array helper → `data/<name>` (`/data/<fn>`)
-- branded / ADT types → `brand` / `tag` / `assertNever` (`/types`)
-- retries / timeouts → `retry` / `withTimeout` (`/async`)
+- **Atoms & molecules (`src/components/ui/`)**: start small primitives as single `kebab-case` files (`src/components/ui/button.tsx`). When a component outgrows one file (multiple sub-parts, variants, or stateful logic), promote it into a folder `src/components/ui/<name>/` containing its internal atoms (`<name>-trigger.tsx`, `<name>-row.tsx`), a `use-<name>.ts` hook for testable logic, and `index.ts`.
+- **Organisms (`src/components/<organism>/`)**: larger multi-part compositions (e.g., `src/components/calendar/`, `src/components/block-editor/`, `src/components/wizard/`, `src/components/bottom-nav/`) live in their own directories directly under `src/components/` rather than inside `components/ui/`.
+- **Layouts (`src/components/layout/`)**: reusable layout shells and templates (app shell, split-pane, sidebar frame, page headers) live in `src/components/layout/`, keeping layout structure separate from feature logic.
+- `components/ui/**` must NOT import `features/*`, `routes/*`, `services/*`, or storage/fetch directly.
+- `features/*` may import `components/*`, `core/*`, `utils/*`, `lib/*`, `services/*`.
+- `routes/*` compose `features/*` and layout chrome.
 
-### Use `@ur-wesley/ts-prelude` especially for
+---
 
-- parsing and validation helpers
-- API response normalization
-- mapping DTOs to domain models
-- feature services with recoverable failures
+## 7. Component, Reactivity & Storage Rules
 
-### Avoid it in
+- **Props**: export `interface XProps` (or `type`), mark fields `readonly`, never destructure reactive props (`solid/no-destructure`), forward with `splitProps` / `mergeProps` / `children(() => props.children)`.
+- **Reactivity**: simplest primitive wins (`createSignal` > `createMemo` > `createStore` > `createResource` > `createEffect`). Never use `createEffect` to mirror derivable state.
+- **Lists & control flow**: keyed `<For each={...}>` (or `<Index>` when index stability helps), `<Show>`, `<Switch>/<Match>`.
+- **Context stores**: `createXContext` / `XProvider` / `useXContext` returning `readonly [state, actions]`. Throw if used outside provider.
+- **Storage contract**:
+  - **Sync small prefs** (theme, locale, sidebar state): read synchronously via safe `localStorage` wrappers (`src/core/storage.ts`, `src/theme-init.ts`) so first paint has zero FOUC.
+  - **Large domain caches** (events, items, offline docs): session memory cache + IndexedDB (`localforage`).
+  - **Single-source keys**: all storage key names live in `src/core/constants.ts` — never scatter raw `'app:*'` strings.
+- **Error boundaries & async states**: wrap route/feature boundaries in `<ErrorBoundary>`, handle loading/empty/error/success explicitly, and wrap SSE/streams in `ResultAsync` (`/result`) — never `throw` a `Result.err` upstream.
 
-- simple UI event handlers
-- trivial synchronous helpers that cannot fail
-- places where framework APIs already require thrown errors
+---
 
-## Error Handling
+## 8. `DESIGN.md` Living Spec Template
 
-- Use error boundaries at route and major feature boundaries
-- Provide graceful fallbacks
-- Distinguish recoverable UI errors from fatal app errors
-- Pair route-level `<ErrorBoundary>` with `@ur-wesley/ts-prelude/result` errors; never `throw` a `Result.err` upstream
+Every UI app should keep a root `DESIGN.md` combining machine-readable YAML frontmatter tokens with concise architectural rationale:
 
-## Performance
+```markdown
+---
+version: 1.0
+name: AppName
+description: One-line product & visual system summary.
+colors:
+  primary: '#005FCC'
+  on-primary: '#FFFFFF'
+  text-primary: '#1D1D1F'
+  surface-card: 'rgba(255, 255, 255, 0.7)'
+typography:
+  body: { fontFamily: '...', fontSize: '13px', fontWeight: 400, lineHeight: 1.4 }
+rounded: { sm: '7px', md: '8px', lg: '16px', pill: '999px' }
+spacing: { sm: '8px', md: '16px', lg: '24px' }
+---
 
-- Use `For` for keyed list rendering
-- Use `Index` when identity is stable and index optimization helps
-- Avoid unnecessary memos
-- Avoid broad reactive reads in large components
-- Lazy-load heavy route sections when useful
-- Avoid premature optimization that harms clarity
+## Overview & Dark Mode
+## Colors & Contrast
+## Typography
+## Layout & Flat Containment
+## Elevation & Shapes
+## Do's and Don'ts
+```
 
-## Naming
+---
 
-### Components
+## 9. Review Checklist
 
-- `PascalCase`
-
-### Functions and helpers
-
-- `camelCase`
-
-### Factories or hooks or context helpers
-
-- `createX`
-- `useX`
-- `getX`
-
-### Actions
-
-Use verb-based names:
-
-- `toggle`
-- `open`
-- `close`
-- `setItems`
-- `submit`
-
-## Documentation
-
-Reusable UI components should document:
-
-- purpose
-- props
-- variants
-- accessibility notes
-- example usage
-
-## SSR and Hydration
-
-- Guard browser-only APIs
-- Avoid non-deterministic SSR output
-- Do not read `window`, `document`, or storage during server render
-- Isolate client-only behavior explicitly
-
-## Do / Don't
-
-### Do
-
-- build shared UI in `components/ui` as the `solid-ui` layer
-- compose shared primitives from Kobalte / Ark UI / Corvu / `solid-sonner` / `cva`
-- use `solid-primitives` when they fit
-- use `@ur-wesley/ts-prelude/<subpath>` for `neverthrow` / `ts-pattern` / `remeda` usage
-- keep business logic out of presentational components
-- use readonly tuple context stores
-- use Tailwind v4 with `@theme` tokens consistently
-- use `i-mdi-<icon>` for icons via the Iconify plugin
-- use TanStack Query for server state
-- use strong typing everywhere
-- derive state where possible
-- prioritize accessibility
-
-### Don't
-
-- import from `@ur-wesley/ts-prelude` (root export is `VERSION` only)
-- import from `neverthrow`, `ts-pattern`, or `remeda` directly
-- fetch data inside atoms
-- mutate shared state outside actions
-- place feature logic in generic UI components
-- use `any`
-- create giant configurable components by default
-- duplicate the same state in multiple places
-- bypass shared UI primitives without reason
-- reimplement what `solid-primitives` already provides
-- `throw` across a recoverable boundary
+- [ ] Flat hierarchy: max 1 containment level; spacing/typography used instead of nested boxes
+- [ ] Bespoke components wrapped directly from Kobalte / Ark UI / Corvu / `solid-sonner`
+- [ ] All filenames `kebab-case`; exported components `PascalCase`; props `readonly` + typed
+- [ ] `components/ui/**` has zero `features/*` / fetch / storage imports; organisms live in `src/components/<organism>/`
+- [ ] `@theme inline` tokens used (`class-guard.ts` passes with 0 arbitrary var/hex/tiny-text violations)
+- [ ] Self-hosted `@fontsource/*` fonts; `i-mdi-*` icons with `aria-hidden="true"` or labels
+- [ ] No overloaded single/double click targets; `pointerdown` feedback; optimistic/undo or hold-to-confirm
+- [ ] `eslint-plugin-solid` clean; `bun:test` TSX preload + reactive-leak checks green
+- [ ] `@ur-wesley/ts-prelude/<subpath>` imports only (no root, no direct `neverthrow`/`ts-pattern`/`remeda`)
